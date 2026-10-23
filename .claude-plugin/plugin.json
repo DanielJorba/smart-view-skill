@@ -1,0 +1,10 @@
+{
+  "name": "smart-view",
+  "description": "Operate and master Oracle Smart View for Office from Claude: read-only bridge to the user's Excel (connect once, refresh, explore dimensions and members, build ad hoc grids, open reports, check whether a member has data), VBA API, cell functions and troubleshooting.",
+  "version": "1.0.0",
+  "author": { "name": "Daniel Jorba" },
+  "homepage": "https://github.com/DanielJorba/smart-view-skill",
+  "repository": "https://github.com/DanielJorba/smart-view-skill",
+  "license": "MIT",
+  "keywords": ["oracle", "smart-view", "epm", "planning", "fccs", "essbase", "excel"]
+}
