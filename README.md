@@ -41,12 +41,20 @@ add-in for Oracle EPM Cloud (Planning, FCCS, Tax Reporting), Essbase and Hyperio
 
 ## Install
 
-Claude Code:
+From a terminal (PowerShell or cmd), with Claude Code installed. This works for the
+desktop app too: the `/plugin` command is not available in the desktop app's chat.
 
 ```text
-/plugin marketplace add DanielJorba/smart-view-skill
-/plugin install smart-view@smart-view-skill
+claude plugin marketplace add DanielJorba/smart-view-skill
+claude plugin install smart-view@smart-view-skill
 ```
+
+Inside an interactive `claude` terminal session the same is
+`/plugin marketplace add DanielJorba/smart-view-skill` and
+`/plugin install smart-view@smart-view-skill`. Then open a new session. The plugin does
+not appear in the app's Plugins page (that lists Anthropic's directory): it is a
+separate marketplace added by the commands above. Update later with
+`claude plugin marketplace update smart-view-skill`.
 
 First use: ask Claude anything about Smart View. It checks Excel and, if the bridge is
 missing, asks in the chat before running `scripts/sv.ps1 install`, which copies the
