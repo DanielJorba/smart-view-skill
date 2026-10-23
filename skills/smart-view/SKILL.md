@@ -140,6 +140,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sv.ps1 read "" Explo
   a new one per step, never recreate a sheet other sheets' formulas point to, and at the
   end of a task remove the working sheets with `sv.ps1 drop-sheet <sheet> [...]` (scratch
   workbook only) and leave only what the user needs to see.
+- **Results the user keeps are connected Smart View sheets**, never values pasted into
+  an unconnected sheet: a member list (for example a dimension down to level 0) is an ad
+  hoc grid built and zoomed on a connected sheet (`ZoomIn` level 2 for level 0), or a
+  dimension sheet opened from the panel. Give that sheet a clear name, leave it
+  connected so the user can refresh, zoom and pivot, and delete the working sheets
+  around it. A plain copy only when the user asks for one (and say it is not connected).
 - With figures hidden, count "has data" with an Excel formula that returns text (for
   example `="nonzero="&SUMPRODUCT(ISNUMBER(B7:B169)*(B7:B169<>0))`, written with
   `WriteTsv` in English syntax and read back with `read` on that one cell): masked reads

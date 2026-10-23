@@ -141,6 +141,31 @@ sv.ps1 call PivotToPOV "" Grid "A3"
 sv.ps1 call Undo "" Grid
 ```
 
+### List a dimension (or a branch) down to level 0, on a connected sheet
+
+The result stays a live Smart View ad hoc sheet: the user can refresh, zoom or pivot it.
+
+```powershell
+sv.ps1 call Scratch "Entity_L0" true                     # name it after the result
+sv.ps1 call UIConnect "" Entity_L0 "<connection or inline string>"
+sv.ps1 call SetAliasTable "" Entity_L0 None              # member names (skip if the user wants aliases)
+sv.ps1 call SetOption 33 true "" Entity_L0               # navigate without data: no figures
+sv.ps1 call Retrieve "" Entity_L0                        # default grid
+sv.ps1 read "" Entity_L0                                  # find the cell of each dimension label
+sv.ps1 call PivotToGrid "" Entity_L0 Entity <row dim cell>  # only if Entity is not on the rows yet
+sv.ps1 call WriteTsv Entity_L0 <Entity cell> "'<branch>"  # only to start from a branch, not the root
+sv.ps1 call Retrieve "" Entity_L0
+sv.ps1 call ZoomIn "" Entity_L0 <Entity cell> 2          # 2 = bottom level (level 0)
+sv.ps1 read "" Entity_L0                                  # check the result
+```
+
+Read the grid before picking cells: default grids differ (one or several dimensions on
+each axis), so the dimension may already be on the rows and not in `A3`. The root row
+stays on top after the zoom. Shared members and alternate hierarchies show
+up as well; say so if the user expects unique members. Leave this sheet connected and
+delete only the working sheets used on the way. Hand over a pasted, unconnected copy
+only if the user asks for one.
+
 ### Open a form and read it
 
 ```powershell
