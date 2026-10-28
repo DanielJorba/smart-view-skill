@@ -28,7 +28,7 @@ add-in for Oracle EPM Cloud (Planning, FCCS, Tax Reporting), Essbase and Hyperio
 - The bridge works on its own scratch workbook unless you name one of yours.
 - Figures are hidden (`<n>`) in everything Claude reads. To let Claude see amounts on
   your own machine, set the user environment variable `SMARTVIEW_SKILL_ALLOW_FIGURES=1`
-  yourself; Claude then shows them only when you explicitly ask in that message.
+  yourself (and back to `0` to hide them again). Claude never changes it.
 
 ## Requirements
 

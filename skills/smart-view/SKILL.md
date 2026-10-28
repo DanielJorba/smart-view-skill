@@ -52,12 +52,14 @@ is immediate and shared by everyone.
 - **Passwords are never yours.** Do not ask for them, accept them, store them or put
   them in code. The user signs in once in Smart View's own dialog; after that the
   session is reused by every sheet connected to the same server.
-- **Figures stay hidden.** Every read through the bridge returns numbers as `<n>`. Work
-  with structure, members, error texts and checks computed in Excel that return text
-  (OK / DIF). Never try to read amounts any other way (Excel COM, files, screenshots).
-  Only if the user has set `SMARTVIEW_SKILL_ALLOW_FIGURES=1` themselves and explicitly
-  asks to see amounts in that message, add `-ShowFigures` to that call. Never set or
-  change that variable.
+- **Figures follow the user's switch.** The user environment variable
+  `SMARTVIEW_SKILL_ALLOW_FIGURES` decides, and only the user sets it: at `1`, reads
+  return amounts and you use them when the task needs them; at `0` or missing, every
+  read returns numbers as `<n>` and you work with structure, members, error texts and
+  checks computed in Excel that return text (OK / DIF), and never try to read amounts
+  any other way (Excel COM, files, screenshots). `sv.ps1 status` shows the state. Never
+  set or change that variable. Add `-HideFigures` to a call to mask it anyway (for
+  example when sharing output).
 - **Structure first, data only on request.** Exploring dimensions and building grids
   works with *navigate without data* on, so no figures leave the system. Retrieve
   actual numbers only when the user asks for them, and remember they may be

@@ -17,9 +17,9 @@
     call <Wrapper> [args...]     Run SVB_<Wrapper> in the bridge, for example
                                  "call GetPOV '' Sheet1". Only SVB_* wrappers can be called.
     read <workbook> <sheet> [range] [maxRows]
-                                 Numeric cells come back as <n>: figures are hidden by
-                                 default in every read (read, formulas, hs-audit,
-                                 ReadTsv, CellValue, AuditFunctions).
+                                 Numeric cells come back as <n> unless the user set
+                                 SMARTVIEW_SKILL_ALLOW_FIGURES=1 (applies to read, formulas,
+                                 hs-audit, ReadTsv, CellValue, AuditFunctions; -HideFigures masks anyway).
                                  Cell values as TSV. Empty workbook = scratch workbook.
                                  Range defaults to the used range. Adds the indent level
                                  of the first column as column 0.
@@ -60,7 +60,8 @@
 param(
     [ValidateSet('cancel', 'contents', 'contentsandpov', 'clear')] [string] $Reuse = 'cancel',
     [switch] $KeepMessages,
-    [switch] $ShowFigures,
+    [switch] $HideFigures,
+    [switch] $ShowFigures,   # accepted for compatibility; no effect
     [Parameter(Position = 0)] [string] $Command = 'help',
     [Parameter(Position = 1, ValueFromRemainingArguments = $true)] [string[]] $Rest
 )
@@ -72,9 +73,9 @@ $OutputEncoding = [System.Text.Encoding]::UTF8
 $BridgeName = 'SmartViewBridge.xlam'
 . (Join-Path $PSScriptRoot 'DialogWatch.ps1')
 . (Join-Path $PSScriptRoot 'SvUrl.ps1')
-# Figures are hidden by default. Showing them needs a personal machine setting the user
-# sets themselves (SMARTVIEW_SKILL_ALLOW_FIGURES=1) AND -ShowFigures on the call.
-$AllowFigures = (($env:SMARTVIEW_SKILL_ALLOW_FIGURES -eq '1') -or ([Environment]::GetEnvironmentVariable('SMARTVIEW_SKILL_ALLOW_FIGURES', 'User') -eq '1')) -and $ShowFigures.IsPresent
+# Figures are hidden unless the user enables them with a personal machine setting the user
+# sets themselves (SMARTVIEW_SKILL_ALLOW_FIGURES=1); -HideFigures masks a call anyway.
+$AllowFigures = (($env:SMARTVIEW_SKILL_ALLOW_FIGURES -eq '1') -or ([Environment]::GetEnvironmentVariable('SMARTVIEW_SKILL_ALLOW_FIGURES', 'User') -eq '1')) -and -not $HideFigures.IsPresent
 $DataDir = Join-Path $env:LOCALAPPDATA 'smart-view-skill'
 $SvRegistry = 'HKCU:\Software\Hyperion Solutions\HyperionSmartView'
 
@@ -260,7 +261,7 @@ switch ($Command.ToLowerInvariant()) {
             smartViewLoaded = $false
             bridgeLoaded    = $false
             bridgePing      = $null
-            figures         = if ([Environment]::GetEnvironmentVariable('SMARTVIEW_SKILL_ALLOW_FIGURES', 'User') -eq '1') { 'visible on explicit request' } else { 'hidden' }
+            figures         = if ([Environment]::GetEnvironmentVariable('SMARTVIEW_SKILL_ALLOW_FIGURES', 'User') -eq '1') { 'visible (variable at 1)' } else { 'hidden' }
             smartView       = Get-SmartViewVersion
         }
         if ($excelRunning) {
@@ -599,7 +600,7 @@ switch ($Command.ToLowerInvariant()) {
         Write-Json ([ordered]@{
             ok        = $true
             profiles  = $profilesFile
-            figures   = if ($figNow -eq '1') { 'visible on explicit request' } else { "hidden. To let Claude see amounts, set the user environment variable $figVar to 1 yourself (Windows: Edit environment variables for your account)." }
+            figures   = if ($figNow -eq '1') { 'visible (variable at 1)' } else { "hidden. To let Claude see amounts, set the user environment variable $figVar to 1 yourself (Windows: Edit environment variables for your account)." }
             installed = $dest
             loaded    = $loaded
             next      = if ($loaded) { 'Run: sv.ps1 status' } else { 'Open Excel and run sv.ps1 install again to load it.' }
