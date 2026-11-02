@@ -180,6 +180,31 @@ function Get-SmartViewVersion {
     }
 }
 
+# Clouds registered with epm.py pod-add: what is cached and how to open each in Smart View.
+function Get-Pods {
+    $podsFile = Join-Path $DataDir 'pods.json'
+    if (-not (Test-Path -LiteralPath $podsFile)) { return }
+    $pods = Get-Content -LiteralPath $podsFile -Raw -Encoding UTF8 | ConvertFrom-Json
+    $creds = (cmdkey /list 2>$null) -join "`n"
+    foreach ($p in $pods.PSObject.Properties) {
+        $pod = $p.Value
+        $cacheDir = Join-Path (Join-Path $DataDir 'cache') $p.Name
+        $dims = if (Test-Path -LiteralPath $cacheDir) { @(Get-ChildItem -LiteralPath $cacheDir -Recurse -Filter *.json | Where-Object { $_.Name -notlike '_*' }).Count } else { 0 }
+        $rules = [bool](Get-ChildItem -LiteralPath $cacheDir -Recurse -Filter '_jobdefs.json' -ErrorAction SilentlyContinue)
+        [ordered]@{
+            name             = $p.Name
+            env              = $pod.env
+            host             = ([uri]$pod.url).Host
+            application      = $pod.app
+            cubes            = @($pod.cubes)
+            credential       = ($creds -match [regex]::Escape("smart-view-skill:$($p.Name)") -or $creds -match [regex]::Escape("epm-cloud-skill:$($p.Name)"))
+            cachedDimensions = $dims
+            cachedRules      = $rules
+            smartView        = "pod:$($p.Name)"
+        }
+    }
+}
+
 function Resolve-Argument([string] $Value) {
     if ($Value -and $Value.StartsWith('@')) {
         $path = $Value.Substring(1)
@@ -275,6 +300,7 @@ switch ($Command.ToLowerInvariant()) {
             bridgePing      = $null
             figures         = if ([Environment]::GetEnvironmentVariable('SMARTVIEW_SKILL_ALLOW_FIGURES', 'User') -eq '1') { 'visible (variable at 1)' } else { 'hidden' }
             smartView       = Get-SmartViewVersion
+            pods            = @(Get-Pods)
         }
         if ($excelRunning) {
             $result.excelVersion = Invoke-WithRetry { $excel.Version }

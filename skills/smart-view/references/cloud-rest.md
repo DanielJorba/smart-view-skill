@@ -53,7 +53,8 @@ Pods hold client data and production pods are shared by everyone who works on th
 | Member properties (formula, storage, parent) | `member <pod> <Dim> <Member>` (needs Service Administrator) |
 | Read figures, check a tie, does a member have data | `slice` (see Reading data) |
 | Substitution variables (current month, year...) | `subvars <pod> [--cube C]` (application level first, then each cube) |
-| Which rules or jobs exist; did a job finish | `jobdefs <pod> [--type RULES]`, `job <pod> <id>` |
+| Which business rules exist, find one by part of its name | `rules <pod> [text]` (cached with all job definitions; `--refresh` after the user adds rules) |
+| Which jobs exist; did a job finish | `jobdefs <pod> [--type IMPORT_DATA]` (same cache), `job <pod> <id>` |
 | Which files or snapshots are in the pod | `files <pod>` |
 | Which data integrations or pipelines ran, and what they did | see Data Integration below |
 | Read a log or text file of the pod | `cat <pod> outbox/logs/<id>.log` |
@@ -126,7 +127,7 @@ in the pod, or exports its setup (that creates a file in the pod, so the user ru
 | Message | Meaning |
 |---|---|
 | `HTTP 401` | Wrong user or password, user with MFA, or SSO-only user. The user re-runs `cred-set`. |
-| `HTTP 403` | The role does not allow it. `member`, `jobdefs`, `job` and `files` need Service Administrator. |
+| `HTTP 403` | The role does not allow it. `member`, `rules`, `jobdefs`, `job` and `files` need Service Administrator. |
 | `HTTP 404` | Application, cube, dimension or member name wrong (check with `cubes`, `dims`, `find`). |
 | `HTML page (probably an SSO sign-in page)` | The user signs in through SSO only; REST needs native credentials. |
 | `Blocked: ...` | The guard refused a write or a path outside the EPM REST APIs. Do not look for a way around it. |

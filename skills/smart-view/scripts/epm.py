@@ -29,7 +29,7 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-VERSION = "1.1.0"
+VERSION = "1.1.1"
 FIGURES_ENV = "SMARTVIEW_SKILL_ALLOW_FIGURES"
 CRED_PREFIX = "smart-view-skill:"
 LEGACY_CRED_PREFIX = "epm-cloud-skill:"  # credentials saved before the merge
@@ -810,16 +810,47 @@ def cmd_subvars(args):
             print(f"  {item.get('name')} = {item.get('value')}")
 
 
+RULE_TYPES = ("RULES", "RULESET")
+
+
+def load_jobdefs(pod: dict, app: str, refresh: bool = False) -> dict:
+    """All job definitions of the application, cached: one call answers jobdefs and rules."""
+    f = home() / "cache" / _safe(pod["name"]) / _safe(app) / "_jobdefs.json"
+    if f.exists() and not refresh:
+        return json.loads(f.read_text(encoding="utf-8"))
+    items = request(pod, "GET", f"{API}/applications/{q(app)}/jobdefinitions").get("items") or []
+    for item in items:
+        item.pop("links", None)
+    data = {"_fetched": dt.datetime.now().isoformat(timespec="seconds"), "items": items}
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    return data
+
+
 def cmd_jobdefs(args):
     pod = get_pod(args.pod)
     app = app_of(pod, args)
-    path = f"{API}/applications/{q(app)}/jobdefinitions"
-    if args.type:
-        path += "?" + urllib.parse.urlencode({"q": json.dumps({"jobType": args.type})})
-    items = request(pod, "GET", path).get("items") or []
-    print(f"{len(items)} job definitions")
+    data = load_jobdefs(pod, app, args.refresh)
+    items = [i for i in data["items"] if not args.type or (i.get("jobType") or "").upper() == args.type.upper()]
+    print(f"{len(items)} job definitions (cached {data['_fetched']}; --refresh to reload)")
     for item in items:
         print(f"{item.get('jobType')}\t{item.get('jobName')}")
+
+
+def cmd_rules(args):
+    pod = get_pod(args.pod)
+    app = app_of(pod, args)
+    data = load_jobdefs(pod, app, args.refresh)
+    needle = (args.text or "").lower()
+    rules = [i for i in data["items"] if (i.get("jobType") or "").upper() in RULE_TYPES
+             and needle in (i.get("jobName") or "").lower()]
+    rules.sort(key=lambda i: ((i.get("jobType") or ""), (i.get("jobName") or "").lower()))
+    what = f" matching '{args.text}'" if args.text else ""
+    print(f"{app}: {len(rules)} rules and rulesets{what} (cached {data['_fetched']}; --refresh to reload)")
+    for item in rules[: args.limit]:
+        print(f"{item.get('jobType')}\t{item.get('jobName')}")
+    if len(rules) > args.limit:
+        print(f"... {len(rules) - args.limit} more (raise --limit or add text to search)")
 
 
 def cmd_job(args):
@@ -1004,8 +1035,14 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("dim")
     sp.add_argument("member")
     add("subvars", cmd_subvars, "substitution variables of a cube", app=True, cube=True)
-    sp = add("jobdefs", cmd_jobdefs, "job definitions (Service Administrator)", app=True)
+    sp = add("jobdefs", cmd_jobdefs, "job definitions, cached (Service Administrator)", app=True)
     sp.add_argument("--type", help="RULES, RULESET, IMPORT_DATA, EXPORT_DATA, CUBE_REFRESH...")
+    sp.add_argument("--refresh", action="store_true", help="reload the job definitions from the pod")
+    sp = add("rules", cmd_rules, "business rules and rulesets, cached; search by part of the name "
+             "(Service Administrator)", app=True)
+    sp.add_argument("text", nargs="?")
+    sp.add_argument("--limit", type=int, default=300)
+    sp.add_argument("--refresh", action="store_true", help="reload the job definitions from the pod")
     sp = add("job", cmd_job, "status of a job by id (Service Administrator)", app=True)
     sp.add_argument("job_id")
     add("files", cmd_files, "files and snapshots in the pod (Service Administrator)")

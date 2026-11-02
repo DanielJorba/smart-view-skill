@@ -89,7 +89,7 @@ is immediate and shared by everyone.
 |---|---|
 | Connect, refresh, open forms or ad hoc grids, zoom, pivot, POV, read a sheet | `references/operations.md` (+ `references/bridge-setup.md` the first time) |
 | Register a cloud, look up cubes, dimensions, hierarchies or members fast, variables, rules, jobs, Data Integration runs | `references/cloud-rest.md` (`scripts/epm.py`) |
-| Open in Smart View a cloud already registered | `sv.ps1 call UIConnect "" <sheet> "pod:<name>[/<CUBE>]"` |
+| Open in Smart View a cloud already registered | `sv.ps1 call UIConnect "" <sheet> "pod:<name>[/<CUBE>]"`; `sv.ps1 status` lists the registered clouds, their credential and what is cached |
 | Understand a cube: dimensions, hierarchies, members, properties, attributes | On EPM Cloud with the pod registered, start with `epm.py dims`, `tree` and `find` (cached, seconds); then `references/structure-discovery.md` **(read before building any ad hoc grid)**; `scripts/panel.ps1` opens dimension sheets from the panel |
 | Build an ad hoc grid that refreshes the first time | `references/adhoc-design.md` |
 | Prepare a metadata change (move a member, `_Hist` history, alias) | `references/metadata-changes.md` |

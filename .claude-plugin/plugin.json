@@ -1,7 +1,7 @@
 {
   "name": "smart-view",
   "description": "Operate and master Oracle Smart View for Office from Claude, and read EPM Cloud pods through their REST APIs: read-only bridge to the user's Excel (connect once, refresh, explore dimensions and members, build ad hoc grids, open reports, check whether a member has data), read-only REST client with a cache of each cloud's cubes and hierarchies for fast lookups, VBA API, cell functions and troubleshooting.",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": {
     "name": "Daniel Jorba"
   },

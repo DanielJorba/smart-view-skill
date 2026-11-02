@@ -75,6 +75,13 @@ class FakePod(BaseHTTPRequestHandler):
             self.send_header("Content-Length", str(len(data)))
             self.end_headers()
             self.wfile.write(data)
+        elif self.path == "/HyperionPlanning/rest/v3/applications/Vision/jobdefinitions":
+            self._send(200, {"items": [
+                {"jobType": "RULES", "jobName": "Calc_Revenue", "links": []},
+                {"jobType": "RULESET", "jobName": "Close_All"},
+                {"jobType": "IMPORT_DATA", "jobName": "Load_GL"},
+                {"jobType": "RULES", "jobName": "Agg_Revenue"},
+            ]})
         elif self.path == "/aif/rest/V1/jobs/7":
             self._send(200, {"status": "0", "jobId": "7", "jobStatus": "SUCCESS", "processType": "PIPELINE_EXECUTE",
                              "logFileName": "outbox/logs/7.log", "executedBy": "someone@example.com"})
@@ -296,6 +303,18 @@ class WithFakePod(unittest.TestCase):
             from openpyxl import load_workbook
             ws = load_workbook(written)["Data"]
             self.assertEqual(ws.cell(row=4, column=5).value, 410000)
+
+    def test_rules_are_cached_and_searched(self):
+        code, out, err = run(["rules", self.pod, "--refresh"])
+        self.assertEqual(code, 0, err)
+        self.assertIn("3 rules and rulesets", out)
+        self.assertNotIn("Load_GL", out)
+        code, out, err = run(["rules", self.pod, "revenue"])
+        self.assertIn("2 rules and rulesets matching 'revenue'", out)
+        code, out, err = run(["jobdefs", self.pod, "--type", "import_data"])
+        self.assertIn("Load_GL", out)
+        log = (Path(self.tmp.name) / "logs" / "calls.log").read_text(encoding="utf-8")
+        self.assertEqual(log.count("/jobdefinitions"), 1)
 
     def test_sv_connection(self):
         code, out, err = run(["sv", self.pod])
