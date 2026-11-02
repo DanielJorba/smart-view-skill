@@ -39,14 +39,16 @@ members the business rules write to. That is not in the outline; it is in the ru
 
 | Route | Gives | Needs |
 |---|---|---|
+| R. REST client (`epm.py dims`, `tree`, `find`, `member`) | Dimensions, full hierarchies, aliases, storage, levels, shared members; searches in a second once cached | EPM Cloud pod registered with `pod-add` and the user's `cred-set` ([cloud-rest.md](cloud-rest.md)) |
 | A. EPM Admin Extension dimension sheet | Every member with every property | Service administrator role, the extension, a click by the user |
 | B. Member queries via bridge | Children, descendants, levels, generations, search, member properties, formulas, UDAs, attributes | **Essbase connections only** (Oracle documents none of them for Planning, FCCS or HFM) |
 | C. Ad hoc exploration without data | Hierarchy, names, aliases, level/indent | Any connection; no figures retrieved |
 | D. Metadata exports | Everything, offline | The user provides the file (metadata export job or snapshot) |
 
-Use the cheapest route that answers the question. On **Planning, FCCS or Tax
-Reporting** the API has no member queries: use C for hierarchies and A or D for
-properties. On **Essbase**, B answers most questions directly.
+Use the cheapest route that answers the question. On **EPM Cloud** start with R:
+it reads the whole dimension once and answers from the cache, where C needs a zoom (a
+few seconds) per level. On **Planning, FCCS or Tax Reporting** the Smart View API has no
+member queries: without R, use C for hierarchies and A or D for properties. On **Essbase**, B answers most questions directly.
 
 ## 3. Route A: EPM Admin Extension dimension sheets
 

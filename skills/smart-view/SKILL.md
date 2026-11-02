@@ -1,7 +1,7 @@
 ---
 name: smart-view
-description: Operate and master Oracle Smart View for Office, the Excel add-in for Oracle EPM Cloud (Planning, FCCS, Tax Reporting), Essbase and Hyperion. Connects to the user's running Excel through a read-only bridge to sign in once, refresh, open forms and ad hoc grids, zoom, pivot, set the POV, search members, read hierarchies, attributes and member properties, and map a cube's dimension structure before building an ad hoc grid that refreshes the first time. Also writes and debugs VBA macros with the Smart View API (HypConnect, HypRetrieve, HypSetPOV...), audits, builds and fixes HsGetValue sheets, troubleshoots errors (Empty response from provider, Invalid MRU, #NAME?, timeouts, zeros, out-of-place members) and checks Smart View updates. Use it whenever the user mentions Smart View, ad hoc grids, POV, EPM, Planning, FCCS or Essbase data in Excel, Hyp* or Hs* functions, smartview.bas, or wants to explore a cube's dimensions or members, even if they do not name the add-in.
-compatibility: Knowledge parts work anywhere. Operating Smart View needs Claude Code running on the same Windows PC as desktop Excel 64-bit with Smart View and PowerShell 5.1; the SmartViewBridge.xlam add-in ships prebuilt in bridge/ and installs with scripts/sv.ps1 install.
+description: Operate and master Oracle Smart View for Office, the Excel add-in for Oracle EPM Cloud (Planning, FCCS, Tax Reporting), Essbase and Hyperion. Connects to the user's running Excel through a read-only bridge to sign in once, refresh, open forms and ad hoc grids, zoom, pivot, set the POV, search members, read hierarchies, attributes and member properties, and map a cube's dimension structure before building an ad hoc grid that refreshes the first time. Also writes and debugs VBA macros with the Smart View API (HypConnect, HypRetrieve, HypSetPOV...), audits, builds and fixes HsGetValue sheets, troubleshoots errors (Empty response from provider, Invalid MRU, #NAME?, timeouts, zeros, out-of-place members) and checks Smart View updates. Also reads EPM Cloud pods through Oracle's REST APIs with a read-only client (epm.py): registers each cloud once, caches cubes, dimensions and hierarchies for instant member searches, reads substitution variables, rules and jobs, Data Integration runs and data grids (figures masked unless the user allows them), and hands Smart View the connection to open. Use it whenever the user mentions Smart View, ad hoc grids, POV, EPM, Planning, FCCS or Essbase data in Excel, Hyp* or Hs* functions, smartview.bas, or wants to explore a cube's dimensions or members, look something up in an EPM cloud or pod, or check a variable, job or rule, even if they do not name the add-in.
+compatibility: Knowledge parts work anywhere. Operating Smart View needs Claude Code running on the same Windows PC as desktop Excel 64-bit with Smart View and PowerShell 5.1; the SmartViewBridge.xlam add-in ships prebuilt in bridge/ and installs with scripts/sv.ps1 install. The REST client (scripts/epm.py) needs Python 3.9+ on Windows (standard library; openpyxl only for .xlsx output) and a credential the user saves once per pod in their own terminal.
 ---
 
 # Oracle Smart View for Office
@@ -12,11 +12,18 @@ connection, and every grid is read against a **POV** (point of view) for the
 dimensions that are not on rows or columns. Keep that model in mind: most problems and
 most good designs follow from it.
 
-This skill does two kinds of work:
+This skill does three kinds of work:
 
 1. **Operate Smart View** in the user's own Excel through the bridge
    (`scripts/sv.ps1` + `SmartViewBridge.xlam`): connect, refresh, open, explore and read.
-2. **Know Smart View**: design ad hoc grids, write VBA, explain errors, plan updates.
+2. **Read the cloud directly** through Oracle's REST APIs (`scripts/epm.py`): each cloud
+   is registered once, its cubes, dimensions and hierarchies are cached, and member
+   searches, variables, rules and jobs answer in seconds without Excel. Smart View then
+   connects to the same cloud with `pod:<name>`.
+3. **Know Smart View**: design ad hoc grids, write VBA, explain errors, plan updates.
+
+Use the fastest layer that answers: REST (and its cache) for structure and lookups,
+Smart View for grids the user keeps, refreshes and works with in Excel.
 
 ## Rules that protect the user
 
@@ -51,15 +58,23 @@ is immediate and shared by everyone.
   alias tables per sheet (`SetAliasTable`), never per connection.
 - **Passwords are never yours.** Do not ask for them, accept them, store them or put
   them in code. The user signs in once in Smart View's own dialog; after that the
-  session is reused by every sheet connected to the same server.
+  session is reused by every sheet connected to the same server. For the REST client
+  the user saves user and password once per pod with `epm.py cred-set`, which only runs
+  in an interactive terminal (you may start it in the user's terminal; they type).
+- **The cloud is read-only from here too.** `epm.py` only sends GET requests and one
+  POST (`exportdataslice`, which reads a grid). Never try to change a pod by any other
+  route (curl, Invoke-RestMethod, EPM Automate, the browser). A refused call says
+  `Blocked:`; do not look for a way around it.
 - **Figures follow the user's switch.** The user environment variable
   `SMARTVIEW_SKILL_ALLOW_FIGURES` decides, and only the user sets it: at `1`, reads
   return amounts and you use them when the task needs them; at `0` or missing, every
   read returns numbers as `<n>` and you work with structure, members, error texts and
   checks computed in Excel that return text (OK / DIF), and never try to read amounts
-  any other way (Excel COM, files, screenshots). `sv.ps1 status` shows the state. Never
-  set or change that variable. Add `-HideFigures` to a call to mask it anyway (for
-  example when sharing output).
+  any other way (Excel COM, files, screenshots). The same variable governs `epm.py`:
+  `slice` masks amounts and refuses `--out` (a file with figures) unless it is `1`.
+  `sv.ps1 status` and `epm.py status` show the state. Never set or change that
+  variable. Add `-HideFigures` (bridge) or `--hide-figures` (REST) to mask a call anyway
+  (for example when sharing output).
 - **Structure first, data only on request.** Exploring dimensions and building grids
   works with *navigate without data* on, so no figures leave the system. Retrieve
   actual numbers only when the user asks for them, and remember they may be
@@ -73,7 +88,9 @@ is immediate and shared by everyone.
 | The user wants to... | Read |
 |---|---|
 | Connect, refresh, open forms or ad hoc grids, zoom, pivot, POV, read a sheet | `references/operations.md` (+ `references/bridge-setup.md` the first time) |
-| Understand a cube: dimensions, hierarchies, members, properties, attributes | `references/structure-discovery.md` **(read before building any ad hoc grid)**; `scripts/panel.ps1` opens dimension sheets from the panel |
+| Register a cloud, look up cubes, dimensions, hierarchies or members fast, variables, rules, jobs, Data Integration runs | `references/cloud-rest.md` (`scripts/epm.py`) |
+| Open in Smart View a cloud already registered | `sv.ps1 call UIConnect "" <sheet> "pod:<name>[/<CUBE>]"` |
+| Understand a cube: dimensions, hierarchies, members, properties, attributes | On EPM Cloud with the pod registered, start with `epm.py dims`, `tree` and `find` (cached, seconds); then `references/structure-discovery.md` **(read before building any ad hoc grid)**; `scripts/panel.ps1` opens dimension sheets from the panel |
 | Build an ad hoc grid that refreshes the first time | `references/adhoc-design.md` |
 | Prepare a metadata change (move a member, `_Hist` history, alias) | `references/metadata-changes.md` |
 | Does a member have data? (before moving it) | `scripts/member-data.ps1` (see `references/metadata-changes.md`) |

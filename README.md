@@ -9,6 +9,10 @@ add-in for Oracle EPM Cloud (Planning, FCCS, Tax Reporting), Essbase and Hyperio
 - **Understand a cube before touching it**: list its dimensions, walk hierarchies
   without retrieving data, read member properties (Essbase), and keep a cube profile
   so ad hoc grids are built from the real outline and refresh the first time.
+- **Read EPM Cloud directly through its REST APIs** (read-only): register each cloud
+  once, cache its cubes, dimensions and hierarchies, and search members, variables,
+  rules and jobs in seconds without Excel. Smart View then opens the same cloud with
+  `pod:<name>`.
 - **Keep HsGetValue sheets under control**: audit which connection, dimensions and
   members each formula really uses, find error cells and broken links, refresh,
   build function grids and spot-check single values.
@@ -22,13 +26,17 @@ add-in for Oracle EPM Cloud (Planning, FCCS, Tax Reporting), Essbase and Hyperio
   copy version, approvals and similar are not wrapped, and the menu wrapper refuses
   them in six languages.
 - No password is ever requested, stored or passed. You sign in in Smart View's own
-  window.
+  window; for the REST client you save each cloud's credential once in your own
+  terminal (`epm.py cred-set`), in Windows Credential Manager.
+- The REST client only sends GET requests and one POST that reads a grid
+  (`exportdataslice`); everything else is blocked in the code.
 - Exploration runs with *navigate without data*, so structure work brings back no
   figures. Data is retrieved only when you ask.
 - The bridge works on its own scratch workbook unless you name one of yours.
 - Figures are hidden (`<n>`) in everything Claude reads. To let Claude see amounts on
   your own machine, set the user environment variable `SMARTVIEW_SKILL_ALLOW_FIGURES=1`
-  yourself (and back to `0` to hide them again). Claude never changes it.
+  yourself (and back to `0` to hide them again). Claude never changes it. The same
+  switch governs the REST client, including grids written to a file.
 
 ## Requirements
 
@@ -36,6 +44,9 @@ add-in for Oracle EPM Cloud (Planning, FCCS, Tax Reporting), Essbase and Hyperio
   tab) on Windows, desktop Excel 64-bit with Smart View installed, PowerShell 5.1.
   Claude must run on the same PC as Excel: skills uploaded to the Claude apps run in a
   cloud sandbox and cannot reach your Excel.
+- **Reading clouds through REST:** Python 3.9+ on Windows (openpyxl only to write
+  .xlsx) and a user with native credentials in the pod (MFA and SSO-only users cannot
+  use basic authentication).
 - **Knowledge only (VBA, HsGetValue, troubleshooting, ad hoc design):** any Claude client
   with skills.
 
@@ -82,7 +93,9 @@ skills/smart-view/
   bridge/SmartViewBridge.bas   read-only VBA wrappers returning JSON (source)
   bridge/SmartViewBridge.xlam  the same, prebuilt as an Excel add-in
   scripts/sv.ps1           CLI the agent uses to call the bridge
+  scripts/epm.py           read-only REST client for EPM Cloud pods (with cache)
   scripts/build-bridge.ps1 maintainers: rebuild the add-in after changing the .bas
+tests/test_epm.py          offline tests of the REST client (python -m unittest)
 ```
 
 ## Disclaimer

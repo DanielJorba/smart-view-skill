@@ -187,6 +187,18 @@ function Resolve-Argument([string] $Value) {
             return [System.IO.File]::ReadAllText((Resolve-Path -LiteralPath $path), [System.Text.Encoding]::UTF8)
         }
     }
+    # "pod:<name>[/<cube>]": a cloud registered with epm.py pod-add, turned into the inline connection.
+    if ($Value -match '^pod:([^/]+)(?:/(.+))?$') {
+        $name = $Matches[1]; $cube = $Matches[2]
+        $podsFile = Join-Path $DataDir 'pods.json'
+        $pods = if (Test-Path -LiteralPath $podsFile) { Get-Content -LiteralPath $podsFile -Raw -Encoding UTF8 | ConvertFrom-Json } else { $null }
+        $pod = if ($pods) { $pods.$name } else { $null }
+        if (-not $pod) { Stop-WithError "Unknown pod '$name'. Register it with: python epm.py pod-add $name --url <url> --app <APP> --cube <CUBE>" }
+        if (-not $cube) { $cube = @($pod.cubes)[0] }
+        if (-not $pod.app -or -not $cube) { Stop-WithError "Pod '$name' has no application or cube: pass pod:$name/<CUBE> or add them with pod-add." }
+        $svHost = ([uri]$pod.url).Host
+        return "https://$svHost/HyperionPlanning/SmartView|$svHost|$($pod.app)|$cube"
+    }
     # Inline connection "URL|server|app|cube" or a bare URL to an EPM Cloud host: fix the URL part.
     if ($Value -match '^https?://[^|/]+\.oraclecloud\.com') {
         $parts = $Value.Split('|')
