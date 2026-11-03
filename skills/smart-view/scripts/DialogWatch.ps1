@@ -35,7 +35,9 @@ public static class DW {
   public static List<IntPtr> Dialogs(uint pid) {
     var res = new List<IntPtr>();
     EnumWindows((h,l) => { uint p; GetWindowThreadProcessId(h, out p);
-      if (p == pid && IsWindowVisible(h) && GetWindow(h, 4) != IntPtr.Zero) res.Add(h); // owned = modal-like
+      // Owned windows are modal-like. The Smart View "Login" dialog has no owner, so standard
+      // dialogs are taken too.
+      if (p == pid && IsWindowVisible(h) && (GetWindow(h, 4) != IntPtr.Zero || Cls(h) == "#32770")) res.Add(h);
       return true; }, IntPtr.Zero);
     return res; }
   public static string Title(IntPtr h) { var sb = new StringBuilder(256); GetWindowText(h, sb, 256); return sb.ToString(); }
@@ -74,6 +76,12 @@ public static class DW {
                 $isDialog = ($cls -eq '#32770') -or ($ttl -match '(?i)smart view|oracle|microsoft excel')
                 if (-not $isDialog -or $ttl -match '^(?i)POV') { $seen[$key] = $true; continue }
                 $seen[$key] = $true
+                # Sign-in: front at once, without reading its embedded browser content.
+                if ($ttl -match '^(?i)(login|sign in|iniciar sesión)$') {
+                    $front = [DW]::Front($h)
+                    $null = $sync.events.Add([ordered]@{ title = $ttl; text = ''; options = @(); action = 'sign-in window: waiting for the user' + $(if ($front) { ' (brought to front)' } else { ' (flashing in the taskbar)' }) })
+                    continue
+                }
                 try {
                     $el = $A::FromHandle($h)
                     $all = $el.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)

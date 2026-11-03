@@ -29,7 +29,7 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-VERSION = "1.1.1"
+VERSION = "1.1.2"
 FIGURES_ENV = "SMARTVIEW_SKILL_ALLOW_FIGURES"
 CRED_PREFIX = "smart-view-skill:"
 LEGACY_CRED_PREFIX = "epm-cloud-skill:"  # credentials saved before the merge
