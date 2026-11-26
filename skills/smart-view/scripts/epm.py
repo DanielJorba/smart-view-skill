@@ -625,7 +625,8 @@ def cmd_allow_build(args):
              "production stays read-only.")
     if not _interactive():
         fail("allow-build is interactive and only the user runs it, in their own terminal.")
-    print(f"Claude will be able to BUILD in {pod['name']} ({host}): create and change what you ask, never execute.")
+    print(f"Claude will be able to BUILD in {pod['name']} ({host}) with a build tool: create, change, deploy and run "
+          "in this test pod. Production stays read-only.")
     try:
         confirmed = input(f"Type the pod name ({pod['name']}) to confirm: ").strip() == pod["name"]
     except EOFError:
@@ -988,7 +989,7 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--user")
     add("cred-show", cmd_cred_show, "show whether a credential exists (never the password)")
     add("cred-delete", cmd_cred_delete, "delete the pod's credential")
-    add("allow-build", cmd_allow_build, "USER ONLY, interactive: let Claude build (never execute) in a test pod")
+    add("allow-build", cmd_allow_build, "USER ONLY, interactive: let Claude build and run in a test pod")
     add("deny-build", cmd_deny_build, "put a pod back to read-only")
     add("build-check", cmd_build_check, "exit 0 if building is enabled on the pod, 3 if it is read-only")
     sp = add("buildlog", cmd_buildlog, "record what Claude built in the pod (or --show the log)")

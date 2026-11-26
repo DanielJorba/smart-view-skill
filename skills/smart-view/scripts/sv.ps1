@@ -37,6 +37,8 @@
     drop-sheet <sheet> [...]     Delete working sheets of the scratch workbook (never others).
     private-connections [name]   The user's private connections (name, URL, application, cube,
                                  provider, alias table). Read-only; never the credential.
+    backup-connection <name>     Before a change the user explicitly asked for: export the private
+                                 connections to a dated .reg file (reg import undoes the change).
     start-excel                  Start Excel as the user would (visible, Smart View loaded) if
                                  it is not running.
     open <path> [edit]           Open a saved workbook, read-only unless "edit". Never saves.
@@ -527,7 +529,27 @@ switch ($Command.ToLowerInvariant()) {
                 aliasTable  = $s[$i + 5]
             }
         }
-        Write-Json ([ordered]@{ ok = $true; data = @($list); note = 'The user''s connections: read them, never change, rename or remove them.' })
+        Write-Json ([ordered]@{ ok = $true; data = @($list); note = 'The user''s connections: change, rename or remove one only on the user''s explicit request, after backup-connection.' })
+    }
+
+    'backup-connection' {
+        # Before a change the user explicitly asked for: exports the private connections key to a
+        # dated .reg file. Importing it (reg import) puts every private connection back as it was.
+        $name = if ($Rest) { $Rest[0] } else { '' }
+        if (-not $name) { Stop-WithError 'Usage: sv.ps1 backup-connection <connection name>' }
+        $key = Join-Path $SvRegistry 'Connections'
+        if (-not (Test-Path $key) -or $null -eq (Get-ItemProperty $key -Name $name -ErrorAction SilentlyContinue)) {
+            Stop-WithError "There is no private connection named '$name' (sv.ps1 private-connections lists them)."
+        }
+        $dir = Join-Path $DataDir 'connection-backups'
+        New-Item -ItemType Directory -Force $dir | Out-Null
+        $safe = ($name -replace '[^\w.-]', '_')
+        $file = Join-Path $dir ("{0}-{1:yyyyMMdd-HHmmss}.reg" -f $safe, (Get-Date))
+        $regKey = 'HKCU\Software\Hyperion Solutions\HyperionSmartView\Connections'
+        & reg.exe export $regKey $file /y | Out-Null
+        if ($LASTEXITCODE -ne 0 -or -not (Test-Path $file)) { Stop-WithError "Could not export $regKey." }
+        Write-Json ([ordered]@{ ok = $true; connection = $name; backup = $file
+            undo = "Close Excel, then: reg import `"$file`" (restores every private connection as it was at backup time)." })
     }
 
     'start-excel' {

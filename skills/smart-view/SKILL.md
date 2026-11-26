@@ -43,7 +43,9 @@ is immediate and shared by everyone.
   dimension sheet (new parent, alias, storage, a member that keeps history), an ad hoc
   grid, values on a sheet for the user to review. It lists every cell it changed and
   leaves the execution to the user: Submit (data or metadata), Refresh Database,
-  rules and calculations are never run by Claude.
+  rules and calculations are never run from this skill. Running things in a test pod
+  belongs to a build tool the user enabled for that pod with `epm.py allow-build`, never
+  to Smart View.
 - **Dimension changes: before and after, side by side.** When preparing a metadata change,
   keep a sheet with the members as they are now and another with the proposed ones, so
   the user sees exactly what changes, unless the user says otherwise.
@@ -57,11 +59,18 @@ is immediate and shared by everyone.
   sends whatever is there: list the changed cells and never leave unannounced edits. Build and explore in the
   bridge's **scratch workbook**; touch a user workbook only to read it or when the
   user explicitly asks for a layout change there.
-- **Never touch the user's existing private connections.** Do not modify, rename,
-  remove or change the alias table of a connection the user already has: their
-  `HsGetValue` formulas and macros depend on its exact name and settings. Create new
-  connections only, with a new name, after `ConnectionExists` says it is free. Change
-  alias tables per sheet (`SetAliasTable`), never per connection.
+- **The user's private connections change only on their explicit request.** Their
+  `HsGetValue` formulas and macros depend on each connection's exact name and settings,
+  so never modify, rename, remove or change the alias table of one on your own
+  initiative, not even to fix an error: say what is wrong and offer the change. When the
+  user asks in so many words for a change to a named connection, first back it up with
+  `sv.ps1 backup-connection <name>` (a `.reg` file under the skill's data folder that the
+  user can import to undo), then change only what they asked for, through Smart View's own
+  panel (Private Connections > Edit, or the alias table with that connection open), never
+  by writing the registry. Check it afterwards with `sv.ps1 private-connections <name>`
+  and tell the user where the backup is. Otherwise create new connections only, with a
+  new name, after `ConnectionExists` says it is free, and change alias tables per sheet
+  (`SetAliasTable`).
 - **Passwords are never yours.** Do not ask for them, accept them, store them or put
   them in code. The user signs in once in Smart View's own dialog; after that the
   session is reused by every sheet connected to the same server. For the REST client
@@ -132,7 +141,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sv.ps1 read "" Explo
   everything you hand the user (profiles, macros, `HsGetValue` connection strings).
 - To connect when you know URL, application and cube but no private connection name,
   use the inline string `"<url>|<url host>|<APP>|<CUBE>"` as the connection argument
-  (tested on EPM Cloud). Do not create private connections and never touch the user's.
+  (tested on EPM Cloud). Do not create private connections for this, and touch the
+  user's only on their explicit request (rule above).
 - Connections made with the inline string do not show in the Smart View panel. After
   connecting, also run `panel.ps1 server <url>` so the user sees the server and its
   applications in the panel (it opens the panel and leaves its Home page on its own).
