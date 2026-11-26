@@ -1,0 +1,12 @@
+{
+  "name": "smart-view-skill",
+  "owner": { "name": "Daniel Jorba" },
+  "description": "Claude skill to operate Oracle Smart View for Office (Oracle EPM Cloud, Essbase) safely from Claude Code.",
+  "plugins": [
+    {
+      "name": "smart-view",
+      "source": "./",
+      "description": "Oracle Smart View for Office: read-only Excel bridge, cube structure discovery, ad hoc design, reports, member data checks, VBA API and troubleshooting."
+    }
+  ]
+}

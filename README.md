@@ -1,0 +1,109 @@
+# smart-view: an Agent Skill for Oracle Smart View for Office
+
+A skill that lets Claude operate and master **Oracle Smart View for Office**, the Excel
+add-in for Oracle EPM Cloud (Planning, FCCS, Tax Reporting), Essbase and Hyperion.
+
+- **Operate Smart View in your own Excel** through a read-only bridge: sign in once,
+  refresh sheets, open forms and ad hoc grids, zoom, pivot, change the POV, read any
+  Smart View sheet.
+- **Understand a cube before touching it**: list its dimensions, walk hierarchies
+  without retrieving data, read member properties (Essbase), and keep a cube profile
+  so ad hoc grids are built from the real outline and refresh the first time.
+- **Read EPM Cloud directly through its REST APIs** (read-only): register each cloud
+  once, cache its cubes, dimensions and hierarchies, and search members, variables,
+  rules and jobs in seconds without Excel. Smart View then opens the same cloud with
+  `pod:<name>`.
+- **Keep HsGetValue sheets under control**: audit which connection, dimensions and
+  members each formula really uses, find error cells and broken links, refresh,
+  build function grids and spot-check single values.
+- **Know Smart View**: VBA API reference checked against Oracle's documentation and
+  the installed `smartview.bas`, cell functions (`HsGetValue`...), ad hoc design
+  rules, troubleshooting of the classic errors, and version and update guidance.
+
+## Safety by design
+
+- Nothing changes cube data or server artifacts. Submit, calculate, business rules,
+  copy version, approvals and similar are not wrapped, and the menu wrapper refuses
+  them in six languages.
+- No password is ever requested, stored or passed. You sign in in Smart View's own
+  window; for the REST client you save each cloud's credential once in your own
+  terminal (`epm.py cred-set`), in Windows Credential Manager.
+- The REST client only sends GET requests and one POST that reads a grid
+  (`exportdataslice`); everything else is blocked in the code.
+- Exploration runs with *navigate without data*, so structure work brings back no
+  figures. Data is retrieved only when you ask.
+- The bridge works on its own scratch workbook unless you name one of yours.
+- Figures are visible in what Claude reads, in Smart View and in the REST client
+  (including grids written to a file). `-HideFigures` (sv.ps1) or `--hide-figures`
+  (epm.py) masks them as `<n>` for one call, for example when sharing the screen.
+
+## Requirements
+
+- **Full features (operating Smart View):** Claude Code (CLI or the desktop app's Code
+  tab) on Windows, desktop Excel 64-bit with Smart View installed, PowerShell 5.1.
+  Claude must run on the same PC as Excel: skills uploaded to the Claude apps run in a
+  cloud sandbox and cannot reach your Excel.
+- **Reading clouds through REST:** Python 3.9+ on Windows (openpyxl only to write
+  .xlsx) and a user with native credentials in the pod (MFA and SSO-only users cannot
+  use basic authentication).
+- **Knowledge only (VBA, HsGetValue, troubleshooting, ad hoc design):** any Claude client
+  with skills.
+
+## Install
+
+From a terminal (PowerShell or cmd), with Claude Code installed. This works for the
+desktop app too: the `/plugin` command is not available in the desktop app's chat.
+
+```text
+claude plugin marketplace add DanielJorba/smart-view-skill
+claude plugin install smart-view@smart-view-skill
+```
+
+Inside an interactive `claude` terminal session the same is
+`/plugin marketplace add DanielJorba/smart-view-skill` and
+`/plugin install smart-view@smart-view-skill`. Then open a new session. The plugin does
+not appear in the app's Plugins page (that lists Anthropic's directory): it is a
+separate marketplace added by the commands above. Update later with
+`claude plugin marketplace update smart-view-skill`.
+
+First use: ask Claude anything about Smart View. It checks Excel and, if the bridge is
+missing, asks in the chat before running `scripts/sv.ps1 install`, which copies the
+prebuilt add-in to your Excel add-ins folder, loads it and creates an empty local
+profiles file. Nothing else to configure. You still:
+
+- sign in to each EPM instance in Smart View's own window (Claude never sees passwords);
+- answer, the first time on each environment, which cube to work on (Claude saves it in
+  `%LOCALAPPDATA%\smart-view-skill\connections.json`, on your PC only).
+
+Corporate PCs may block PowerShell scripts or Office add-ins by policy; then ask your IT
+team. Excel and Smart View in English or Spanish are tested; other languages may miss
+some dialog texts.
+
+Claude apps (knowledge only): zip the `skills/smart-view` folder and upload it in
+Customize > Skills.
+
+## Layout
+
+```text
+skills/smart-view/
+  SKILL.md                 entry point
+  references/              one file per topic, loaded on demand
+  bridge/SmartViewBridge.bas   read-only VBA wrappers returning JSON (source)
+  bridge/SmartViewBridge.xlam  the same, prebuilt as an Excel add-in
+  scripts/sv.ps1           CLI the agent uses to call the bridge
+  scripts/epm.py           read-only REST client for EPM Cloud pods (with cache)
+  scripts/build-bridge.ps1 maintainers: rebuild the add-in after changing the .bas
+tests/test_epm.py          offline tests of the REST client (python -m unittest)
+```
+
+## Disclaimer
+
+Not affiliated with or endorsed by Oracle. Oracle, Essbase, Hyperion and Smart View
+are trademarks of Oracle and/or its affiliates. This project does not include or
+redistribute Oracle files: the bridge declares the Smart View DLL functions it uses
+itself, from the published signatures, for interoperability.
+
+## License
+
+MIT, see [LICENSE](LICENSE). Provided as is, without warranty: test on a non-production
+instance first.

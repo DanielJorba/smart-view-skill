@@ -1,0 +1,53 @@
+{
+  "skill_name": "smart-view",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Tengo un libro con 8 hojas adhoc conectadas a FCCS en EPM Cloud (conexión privada 'FCCS_PROD_Consol'). Necesito una macro VBA que cambie el Year y el Period del POV de todas las hojas según lo que ponga en la hoja Control (B1 el año, B2 el periodo), refresque cada hoja y deje en la hoja Control un log de qué hoja falló y por qué. Tiene que poder correr sin que salten MsgBox. Dame el módulo completo y lo que tengo que tener preparado antes.",
+      "expected_output": "Complete VBA module using HypSetPOV with Dimension#Member items and HypRetrieve, checking every return code, logging HypGetLastError text to Control, no MsgBox, no submit, no passwords; prerequisites: smartview.bas imported and user signed in (cloud: HypConnect not supported).",
+      "files": [],
+      "assertions": [
+        "Sets the POV with HypSetPOV using 'Dimension#Member' strings (e.g. \"Year#\" & value)",
+        "Checks the return code of HypSetPOV and HypRetrieve for every sheet",
+        "Writes the Smart View error text from HypGetLastError (or GetReturnCodeMessage/HypGetErrorInfo) into the Control log",
+        "Contains no MsgBox calls in the loop",
+        "Does not call HypSubmitData or any submit, calculate or business-rule function",
+        "Does not put a password or credentials in the code",
+        "States that smartview.bas must be imported as a prerequisite",
+        "Warns that on EPM Cloud the macro cannot sign in silently (HypConnect not supported for cloud; the user signs in first or HypUIConnect prompts)",
+        "Mentions that if Year/Period sit in grid header rows instead of the POV, HypSetPOV will not change them"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Una controller de un cliente me dice que al abrir Smart View le sale 'Empty response from provider' y justo después 'Invalid MRU item'. Ya ha desinstalado y reinstalado Smart View y sigue igual. Es Planning en EPM Cloud. ¿Qué le digo que haga, paso a paso?",
+      "expected_output": "Explains both messages are one problem; reinstall does not help because settings live in HKCU registry; steps: browser login test, private connection with URL ending /HyperionPlanning/SmartView, clear recent items, back up and delete registry key, reinstall from instance Downloads; permissions as alternative cause.",
+      "files": [],
+      "assertions": [
+        "Explains that both messages are the same underlying problem (server returns nothing, recent item marked invalid)",
+        "Says the connection URL must end in /HyperionPlanning/SmartView (base instance URL is a typical cause)",
+        "Explains reinstalling does not help because settings live in the user registry (HKCU\\Software\\Hyperion Solutions\\HyperionSmartView)",
+        "Recommends exporting/backing up the registry key before deleting it",
+        "Recommends testing sign-in through the browser with the same user",
+        "Recommends clearing the recently used items list",
+        "Mentions lost permissions/access as an alternative cause"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Quiero montar una hoja adhoc en Smart View contra el cubo de Planning para cuadrar ventas por entidad y cuenta contra un extracto de SAP. Columnas: los 12 meses de FY26, escenario Actual, versión Final, moneda Local. Filas: entidades E100 a E105 y cuentas 7000 a 7005. Al lado quiero una columna con la diferencia contra SAP. Dame el layout exacto celda a celda para que refresque a la primera.",
+      "expected_output": "Grid with only members: header rows for Scenario, Version, Currency, Year, Period repeated over data columns; empty top-left corner; entity and account columns; numeric names as text; difference column outside the grid (other sheet or after a blank column); alias table None; each dimension on one axis; save after refresh.",
+      "files": [],
+      "assertions": [
+        "The grid contains only member names and data cells (no titles or dimension labels inside the grid)",
+        "The top-left corner above the row-dimension columns is left empty",
+        "Scenario, Version and Currency are placed as column header rows in the grid (not left to the POV)",
+        "Each month is a data column with the Year member repeated over every data column",
+        "The SAP difference column is outside the grid (separate sheet, or after at least one blank column)",
+        "Numeric member names (e.g. 7000 accounts or years) are entered as text / with a leading apostrophe",
+        "Advises setting the alias table to None (or using member names consistently)",
+        "Every dimension appears on only one axis"
+      ]
+    }
+  ]
+}

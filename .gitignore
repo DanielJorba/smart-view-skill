@@ -1,0 +1,6 @@
+*-workspace/
+*.xlam
+!skills/smart-view/bridge/SmartViewBridge.xlam
+*.xlsm
+*.xlsx
+~$*
